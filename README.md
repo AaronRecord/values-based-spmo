@@ -3,7 +3,7 @@ A couple of scraper scripts and an Alpaca script to invest in the same positions
 <br> <br>
 Many values-based ETFs already exist, but most of them offer relatively poor returns. The idea is to achieve the high returns of Invesco's SPMO ETF, while not investing in companies that are immoral (not to say that any company is perfect).
 
-# How to use 🛠🔧
+# How to use 🔧
 Create an Alpaca account (if you haven't already). Create a file named `personal_info.py`, and fill in the information required by `config.py` (`API_KEY`, `SECRET_KEY`, and `EMAIL_ADDRESS`).
 <br> <br>
 Run `main.py` and follow the prompts. Be aware that "updating your existing holdings" will liquidate all the current positions in the specified account.
