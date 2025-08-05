@@ -48,7 +48,7 @@ def main():
 			trading_client.close_all_positions(True)
 			order_notional = Decimal(trading_client.get_account().non_marginable_buying_power)
 
-	order_notional += round(Decimal(input('How much would you like to invest? E.g. $1,000.00\n$').strip()), 2)
+	order_notional += round(Decimal(input('How much would you like to invest? E.g. $1,000.00\n$').strip().replace(',', '')), 2)
 	if order_notional == Decimal('0.0'):
 		return
 
