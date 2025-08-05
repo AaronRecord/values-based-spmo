@@ -6,4 +6,4 @@ A couple of scraper scripts and an Alpaca script to invest in the same positions
 Create a file named `personal_info.py`, and fill in the information required by `config.py` (`API_KEY`, `SECRET_KEY`, and `EMAIL_ADDRESS`).
 <br>
 <br>
-Run `main.py` and follow the prompts. Be aware that "updating your existing holdings" will liquidate all your current positions in the specified account.
+Run `main.py` and follow the prompts. Be aware that "updating your existing holdings" will liquidate all the current positions in the specified account.
