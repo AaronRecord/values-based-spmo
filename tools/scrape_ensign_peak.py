@@ -9,7 +9,7 @@ def scrape(email_address: str) -> dict:
 
 	fund: Company = Company(1454984)
 
-	filing: ThirteenF = fund.get_filings(form="13F-HR").latest().obj()
+	filing: ThirteenF = fund.get_filings(form='13F-HR').latest().obj()
 	total: Decimal = sum(map(lambda v: Decimal(v), filing.infotable['Value']))
 
 	holdings = { row['Ticker']: Decimal(row['Value']) / total for _index, row in filing.infotable.iterrows() }

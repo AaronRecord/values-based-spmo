@@ -12,6 +12,6 @@ def scrape() -> dict:
 	response.raise_for_status()
 
 	spmo = pandas.read_csv(io.StringIO(response.text), dtype=str)
-	spmo = { row['Holding Ticker'].strip(): Decimal(row['Weight']) / Decimal("100.0") for _index, row in spmo.iterrows() }
+	spmo = { row['Holding Ticker'].strip(): Decimal(row['Weight']) / Decimal('100.0') for _index, row in spmo.iterrows() }
 
-	return { 'scrape_date': datetime.now(ZoneInfo("America/New_York")).isoformat(sep=' ', timespec='hours'), 'holdings': spmo }
+	return { 'scrape_date': datetime.now(ZoneInfo('America/New_York')).isoformat(sep=' ', timespec='hours'), 'holdings': spmo }
