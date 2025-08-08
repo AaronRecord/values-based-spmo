@@ -1,21 +1,18 @@
-import json
-import pandas
 from decimal import Decimal
+from tools.rebalance import rebalance
+
 
 def generate_holdings(ensign_peak, spmo, manual_exclude: set) -> dict[str, Decimal]:
 	UNSHARED_TICKERS = spmo['holdings'].keys() - ensign_peak['holdings'].keys()
 
-	for t in (UNSHARED_TICKERS | manual_exclude):
-		del spmo['holdings'][t]
+	adjusted_holdings: dict[str, Decimal] = spmo['holdings'].copy()
 
-	total_weight: Decimal = sum(map(lambda v: Decimal(v), spmo['holdings'].values()))
-	balance_factor: Decimal = Decimal('1.0') / total_weight
-
-	holdings = { ticker: weight * balance_factor for ticker, weight in spmo['holdings'].items() }
-
-	assert abs(sum(holdings.values()) - Decimal('1.0')) < Decimal('0.0001')
+	for ticker in (UNSHARED_TICKERS | manual_exclude):
+		del adjusted_holdings[ticker]
 
 	# Just to make sure it's sorted by weight
-	dict(sorted(holdings.items(), key=lambda item: item[1]))
+	holdings = dict(sorted(holdings.items(), key=lambda item: item[1]))
+
+	adjusted_holdings = rebalance(holdings)
 
 	return holdings

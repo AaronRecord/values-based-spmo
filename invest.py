@@ -9,7 +9,7 @@ import config
 from tools.generate_holdings import generate_holdings
 from tools.scrape_ensign_peak import scrape as scrape_ensign_peak
 from tools.scrape_spmo import scrape as scrape_spmo
-
+from tools.rebalance import rebalance
 
 if config.BROKERAGE == 'Fidelity':
 	import fidelity
@@ -19,101 +19,86 @@ if config.BROKERAGE == 'Alpaca':
 
 
 def main():
-	previous_ensign_peak = None
-	previous_spmo = None
 	previous_holdings = None
-	if len(os.listdir('data')) > 1:
-		with open('data/ensign_peak.json', encoding='utf-8') as f:
-			previous_ensign_peak = json.load(f)
-			previous_ensign_peak['holdings'] = { k: Decimal(v) for k, v in previous_ensign_peak['holdings'].items() }
-		with open('data/spmo.json', encoding='utf-8') as f:
-			previous_spmo = json.load(f)
-			previous_spmo['holdings'] = { k: Decimal(v) for k, v in previous_spmo['holdings'].items() }
+
+	data_folder_empty = len(os.listdir('data')) == 0
+	if not data_folder_empty:
 		with open('data/holdings.json', encoding='utf-8') as f:
 			previous_holdings = json.load(f)
 			previous_holdings = { k: Decimal(v) for k, v in previous_holdings.items() }
 
-	ensign_peak = scrape_ensign_peak(config.EMAIL_ADDRESS)
-	with open('data/ensign_peak.json', 'w') as f:
-		json.dump(ensign_peak, f, indent='\t', ensure_ascii=False, default=str)
+	if data_folder_empty or config.UPDATE_SCRAPED_DATA:
+		ensign_peak = scrape_ensign_peak(config.EMAIL_ADDRESS)
+		with open('data/ensign_peak.json', 'w') as f:
+			json.dump(ensign_peak, f, indent='\t', ensure_ascii=False, default=str)
 
-	spmo = scrape_spmo()
-	with open('data/spmo.json', 'w') as f:
-		json.dump(spmo, f, indent='\t', ensure_ascii=False, default=str)
+		spmo = scrape_spmo()
+		with open('data/spmo.json', 'w') as f:
+			json.dump(spmo, f, indent='\t', ensure_ascii=False, default=str)
 
-	holdings: dict[str, Decimal] = generate_holdings(ensign_peak, spmo, config.MANUAL_EXCLUDE)
-	with open('data/holdings.json', 'w') as f:
-		json.dump(holdings, f, indent='\t', ensure_ascii=False, default=str)
+		holdings: dict[str, Decimal] = generate_holdings(ensign_peak, spmo, config.MANUAL_EXCLUDE_FROM_INVESTING)
+		with open('data/holdings.json', 'w') as f:
+			json.dump(holdings, f, indent='\t', ensure_ascii=False, default=str)
 
-	order_notional = Decimal('0.0')
+		if previous_holdings != None and previous_holdings != holdings:
+			print('The generated holdings have changed, consider liquidating your existing holdings (using liquidate_all.py)')
+	else:
+		holdings = previous_holdings
 
-	if previous_holdings != None and previous_holdings != holdings:
-		print('The generated holdings have changed, consider liquidating your existing holdings (using liquidate_all.py)')
 
-	order_notional += round(Decimal(input('How much would you like to invest? E.g. $1,000.00\n$').strip().replace(',', '')), 2)
+	order_notional = round(Decimal(input('How much would you like to invest? E.g. $1,000.00\n$').strip().replace(',', '')), 2)
 	if order_notional == Decimal('0.0'):
 		return
 
-	total = Decimal('0.0')
-
-	# Lowest weights first
-	holdings_list: list[tuple[str, Decimal]] = list(reversed(holdings.items()))
-	original_holding_count = len(holdings_list)
+	original_holding_count = len(holdings)
 
 	# Remove stocks whose amount is less than $1.00
-	while True:
-		weight = holdings_list[0][1]
+	for ticker, weight in reversed(list(holdings.items())):
 		amount = round(order_notional * weight, 2)
 		if amount > Decimal('1.0'):
 			break
 
-		print(f'Skipping {holdings_list[0][0]}, can\'t purchase ${amount} (less than $1.00)')
-		del holdings_list[0]
+		print(f'Skipping {ticker}, can\'t purchase ${amount} (less than $1.00)')
+		del holdings[ticker]
+
+	if len(holdings) > config.MAX_HOLDINGS:
+		holdings = dict(list(holdings.items())[:config.MAX_HOLDINGS])
 
 	# Rebalance the weights.
-	if len(holdings_list) < original_holding_count:
-		total_weight: Decimal = sum(map(lambda holding: holding[1], holdings_list))
-		balance_factor: Decimal = Decimal('1.0') / total_weight
-
-		holdings_list = [ (ticker, weight * balance_factor) for ticker, weight in holdings_list ]
-
-		assert abs(sum(map(lambda holding: holding[1], holdings_list)) - Decimal('1.0')) < Decimal('0.0001')
+	if len(holdings) < original_holding_count:
+		holdings = rebalance(holdings)
 
 	# Calculate the exact amount of money to spend on each stock.
-	notionalized_holdings: dict[str, Decimal] = {}
+	notionalized_holdings: dict[str, Decimal] = { ticker: round(order_notional * weight, 2) for ticker, weight in holdings.items() }
 
-	for ticker, weight in holdings_list[:-1]:
-		amount: Decimal = round(order_notional * weight, 2)
-		total += amount
-		notionalized_holdings[ticker] = amount
-
-	# Whatever's left, invest in the stock with the highest weight.
-	# This way, if rounding leads there to be a couples cents above or below `order_notional`
-	# it won't cause there to actually be more money spent than the exact desired amount.
-	final_holding = holdings_list[-1]
-	amount = order_notional - total
-
-	notionalized_holdings[final_holding[0]] = amount
+	# Take off whatever extra or add whatever's missing to the highest stock to achieve the exact `order_notional`.
+	final_holding_ticker = next(iter(holdings))
+	notionalized_holdings[final_holding_ticker] -= sum(notionalized_holdings.values()) - order_notional
 
 	assert sum(notionalized_holdings.values()) == order_notional
 
-	if config.EXPORT_CSV:
-		file_path = f'data/order_{round(datetime.now().timestamp())}.json'
-		with open(file_path, 'w', encoding='utf-8') as f:
-			d: DataFrame = DataFrame({
-				'Ticker': [ holding[0] for holding in holdings_list ],
-				'Weight': [ holding[1] for holding in holdings_list ],
-				'Notional': [ notional for _ticker, notional in notionalized_holdings.items() ]
-			})
 
-			d.to_csv(f, encoding='utf-8')
+	file_name = f'data/order_{round(datetime.now().timestamp())}'
 
-		print(f'Order information has been saved to {file_path}')
+	d: DataFrame = DataFrame({
+		'Ticker': holdings.keys(),
+		'Weight': holdings.values(),
+		'Notional': notionalized_holdings.values()
+	})
 
-		match config.BROKERAGE.title():
-			case 'Fidelity':
-				fidelity.fill_order(notionalized_holdings)
-			case 'Alpaca':
-				alpaca.fill_order(notionalized_holdings)
+	with open(f'{file_name}.csv', 'w', encoding='utf-8') as f:
+		d.to_csv(f)
+	with open(f'{file_name}.md', 'w', encoding='utf-8') as f:
+		d.to_markdown(f)
+	with open(f'{file_name}.json', 'w', encoding='utf-8') as f:
+		d.to_json(f)
+
+	print('Order information has been saved to data/')
+
+	match config.BROKERAGE.title():
+		case 'Fidelity':
+			fidelity.fill_order(notionalized_holdings)
+		case 'Alpaca':
+			alpaca.fill_order(notionalized_holdings)
 
 main()

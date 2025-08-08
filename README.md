@@ -11,7 +11,7 @@ Create a file named `config.py`, and then fill in all the required information a
 ```py
 # config.py
 
-# Options are 'Fidelity', 'Alpaca', and None
+# Options are 'Fidelity', 'Alpaca', and 'None'
 BROKERAGE: str = None
 
 # Exports a CSV with each stock's ticker, weight, and dollar amount.
