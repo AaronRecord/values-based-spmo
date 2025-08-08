@@ -11,11 +11,8 @@ from tools.scrape_ensign_peak import scrape as scrape_ensign_peak
 from tools.scrape_spmo import scrape as scrape_spmo
 from tools.rebalance import rebalance
 
-if config.BROKERAGE == 'Fidelity':
-	import fidelity
-
 if config.BROKERAGE == 'Alpaca':
-	import alpaca
+	import alpaca_impl
 
 
 def main():
@@ -96,9 +93,7 @@ def main():
 	print('Order information has been saved to data/')
 
 	match config.BROKERAGE.title():
-		case 'Fidelity':
-			fidelity.fill_order(notionalized_holdings)
 		case 'Alpaca':
-			alpaca.fill_order(notionalized_holdings)
+			alpaca_impl.fill_order(notionalized_holdings)
 
 main()

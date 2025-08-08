@@ -27,15 +27,6 @@ EMAIL_ADDRESS: str = '...'
 # Only needed if `BROKERAGE` is set to 'Alpaca'
 ALPACA_API_KEY: str = '...'
 ALPACA_SECRET_KEY: str = '...'
-
-# Only needed if `BROKERAGE` is set to 'Fidelity'.
-# Note that if you're using Fidelity, you will also need to set up a 2FA authenticator app,
-# and input your TOTP code as prompted by `main.py`.
-FIDELITY_USERNAME: str = '...'
-FIDELITY_PASSWORD: str = '...'
-
-# The name/nickname of the Fidelity account you'd like to use, e.g. ROTH IRA
-FIDELITY_ACCOUNT: str = '...'
 ```
 
 Then run `invest.py` and input how much you would like to invest.

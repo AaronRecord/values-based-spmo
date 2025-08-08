@@ -26,5 +26,11 @@ def fill_order(stocks: dict[str, Decimal]):
 	print('Order complete!')
 
 
-def liquidate_all():
-	trading_client.close_all_positions(True)
+def liquidate():
+	if not config.MANUAL_EXCLUDE_FROM_LIQUIDATION:
+		trading_client.close_all_positions(True)
+	else:
+		positions = set(map(lambda position: position.symbol, trading_client.get_all_positions()))
+		positions -= config.MANUAL_EXCLUDE_FROM_LIQUIDATION
+		for position in positions:
+			trading_client.close_position(position)
