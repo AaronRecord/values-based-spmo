@@ -15,7 +15,7 @@ def scrape(email_address: str) -> dict:
 	holdings = { row['Ticker']: Decimal(row['Value']) / total for _index, row in filing.infotable.iterrows() }
 
 	# Sort by weight
-	holdings = dict(sorted(holdings.items(), key=lambda holding: holding[1]))
+	holdings = dict(sorted(holdings.items(), key=lambda holding: holding[1], reverse=True))
 
 	ensign_peak = {
 		'filing_date': filing.filing_date,

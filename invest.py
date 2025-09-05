@@ -32,16 +32,20 @@ def main():
 		spmo = scrape_spmo()
 		with open('data/spmo.json', 'w') as f:
 			json.dump(spmo, f, indent='\t', ensure_ascii=False, default=str)
-
-		holdings: dict[str, Decimal] = generate_holdings(ensign_peak, spmo, config.MANUAL_EXCLUDE_FROM_INVESTING)
-		with open('data/holdings.json', 'w') as f:
-			json.dump(holdings, f, indent='\t', ensure_ascii=False, default=str)
-
-		if previous_holdings != None and previous_holdings != holdings:
-			print('The generated holdings have changed, consider liquidating your existing holdings (using liquidate_all.py)')
 	else:
-		holdings = previous_holdings
+		with open('data/ensign_peak.json', 'r') as f:
+			ensign_peak = json.load(f)
+			ensign_peak['holdings'] = { k: Decimal(v) for k, v in ensign_peak['holdings'].items() }
+		with open('data/spmo.json', 'r') as f:
+			spmo = json.load(f)
+			spmo['holdings'] = { k: Decimal(v) for k, v in spmo['holdings'].items() }
 
+	holdings: dict[str, Decimal] = generate_holdings(ensign_peak, spmo)
+	with open('data/holdings.json', 'w') as f:
+		json.dump(holdings, f, indent='\t', ensure_ascii=False, default=str)
+
+	if previous_holdings != None and previous_holdings != holdings:
+		print('The generated holdings have changed, consider liquidating your existing holdings (using liquidate_all.py)')
 
 	order_notional = round(Decimal(input('How much would you like to invest? E.g. $1,000.00\n$').strip().replace(',', '')), 2)
 	if order_notional == Decimal('0.0'):
@@ -74,23 +78,22 @@ def main():
 
 	assert sum(notionalized_holdings.values()) == order_notional
 
-
-	file_name = f'data/order_{round(datetime.now().timestamp())}'
-
 	d: DataFrame = DataFrame({
 		'Ticker': holdings.keys(),
 		'Weight': holdings.values(),
 		'Notional': notionalized_holdings.values()
 	})
 
-	with open(f'{file_name}.csv', 'w', encoding='utf-8') as f:
+	file_name = f'order_{round(datetime.now().timestamp())}'
+	os.makedirs(f'data/{file_name}')
+	with open(f'data/{file_name}/{file_name}.csv', 'w', encoding='utf-8') as f:
 		d.to_csv(f)
-	with open(f'{file_name}.md', 'w', encoding='utf-8') as f:
+	with open(f'data/{file_name}/{file_name}.md', 'w', encoding='utf-8') as f:
 		d.to_markdown(f)
-	with open(f'{file_name}.json', 'w', encoding='utf-8') as f:
+	with open(f'data/{file_name}/{file_name}.json', 'w', encoding='utf-8') as f:
 		d.to_json(f)
 
-	print('Order information has been saved to data/')
+	print(f'Order information has been saved to data/{file_name}')
 
 	match config.BROKERAGE.title():
 		case 'Alpaca':

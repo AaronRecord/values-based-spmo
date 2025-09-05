@@ -1,19 +1,19 @@
 from decimal import Decimal
 from tools.rebalance import rebalance
+import config
 
-
-def generate_holdings(ensign_peak, spmo, manual_exclude: set) -> dict[str, Decimal]:
+def generate_holdings(ensign_peak, spmo) -> dict[str, Decimal]:
 	UNSHARED_TICKERS = spmo['holdings'].keys() - ensign_peak['holdings'].keys()
 	print(f'Removing the following holdings: {UNSHARED_TICKERS}')
 
 	adjusted_holdings: dict[str, Decimal] = spmo['holdings'].copy()
 
-	for ticker in (UNSHARED_TICKERS | manual_exclude):
+	for ticker in (UNSHARED_TICKERS | config.MANUAL_EXCLUDE_FROM_INVESTING):
 		del adjusted_holdings[ticker]
 
 	# Just to make sure it's sorted by weight
-	holdings = dict(sorted(holdings.items(), key=lambda item: item[1]))
+	adjusted_holdings = dict(sorted(adjusted_holdings.items(), key=lambda item: item[1], reverse=True))
 
-	adjusted_holdings = rebalance(holdings)
+	adjusted_holdings = rebalance(adjusted_holdings)
 
-	return holdings
+	return adjusted_holdings
