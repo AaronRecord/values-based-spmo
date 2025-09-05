@@ -44,9 +44,6 @@ def main():
 	with open('data/holdings.json', 'w') as f:
 		json.dump(holdings, f, indent='\t', ensure_ascii=False, default=str)
 
-	if previous_holdings != None and previous_holdings != holdings:
-		print('The generated holdings have changed, consider liquidating your existing holdings (using liquidate_all.py)')
-
 	order_notional = round(Decimal(input('How much would you like to invest? E.g. $1,000.00\n$').strip().replace(',', '')), 2)
 	if order_notional == Decimal('0.0'):
 		return

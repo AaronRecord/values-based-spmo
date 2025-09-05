@@ -4,7 +4,7 @@ import config
 
 def generate_holdings(ensign_peak, spmo) -> dict[str, Decimal]:
 	UNSHARED_TICKERS = spmo['holdings'].keys() - ensign_peak['holdings'].keys()
-	print(f'Removing the following holdings: {UNSHARED_TICKERS}')
+	print(f'Removing the following holdings from your investment: {UNSHARED_TICKERS}')
 
 	adjusted_holdings: dict[str, Decimal] = spmo['holdings'].copy()
 

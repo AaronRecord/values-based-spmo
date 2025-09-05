@@ -4,6 +4,8 @@ from decimal import Decimal
 
 
 def scrape(email_address: str) -> dict:
+	print('Scraping Ensign Peak 13f...')
+
 	# Tell the SEC who you are (required by SEC regulations).
 	set_identity(email_address)
 

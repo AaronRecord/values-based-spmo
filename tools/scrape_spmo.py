@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo
 from decimal import Decimal
 
 def scrape() -> dict:
+	print('Scraping SPMO holdings...')
+
 	URL = 'https://www.invesco.com/us/financial-products/etfs/holdings/main/holdings/0?audienceType=Investor&action=download&ticker=SPMO'
 
 	response = requests.get(URL)
